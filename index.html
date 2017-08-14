@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+</html>
+<script src="./Sky.js"></script>
+<script src="./Land.js"></script>
+<script src="./Pipe.js"></script>
+<script src="./Bird.js"></script>
+<script>
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+
+    // 设置开始时间
+    var startTime;
+    // 加载图片
+    var imageNames = ["birds", "land", "pipe1", "pipe2", "sky"];
+    var imageObj = {};
+    // 记录加载图片的数
+    var count = 0;
+    // 遍历数组
+    imageNames.forEach(function (imageName) {
+        var image = new Image();
+
+        image.src = "./img/" + imageName + ".png";
+
+        imageObj[imageName] = image;
+        image.onload = function () {
+            // 判断图片是否加载完
+            count++;
+            if (count == imageNames.length) {
+                // console.log(1);
+                // 调用动画
+                createRoles();
+            }
+        }
+    })
+    // 设置数组存储角色的数据
+    var rolseArr = new Array();
+    //创建画布中的角色
+    function createRoles() {
+        // 创建天空背景 
+        for (var i = 0; i < 2; i++) {
+            var sky = new Sky({
+                x: i * canvas.width,
+                canvas: canvas,
+                ctx: ctx,
+                image: imageObj["sky"]
+            });
+            rolseArr.push(sky);
+        }
+        // 创建5块大地
+        for (var i = 0; i < 5; i++) {
+            var land = new Land({
+                x: i * canvas.width / 4,
+                y: canvas.height - imageObj["land"].height,
+                canvas: canvas,
+                ctx: ctx,
+                image: imageObj["land"]
+            });
+            rolseArr.push(land);
+        }
+        // 创建六根柱子
+        var pipeWidth = imageObj["pipe1"].width;
+
+        var gap = (canvas.width - pipeWidth * 6) / 5;
+        for (var i = 0; i < 6; i++) {
+            var pipe = new Pipe({
+                x: 300 + i * (pipeWidth + gap),
+                bottomy: imageObj["land"].height,
+                canvas: canvas,
+                ctx: ctx,
+                topImage: imageObj["pipe2"],
+                bottomImage: imageObj["pipe1"],
+                gap: gap,
+            })
+            rolseArr.push(pipe);
+        }
+
+        // 创建鸟
+        var bird = new Bird({
+            x: 100,
+            y: 100,
+            image: imageObj["birds"],
+            ctx: ctx,
+        })
+        rolseArr.push(bird);
+
+        // 记录开始时间
+        startTime = new Date();
+        //    调用显示
+        action()
+        // setInterval(action, 100);
+        canvas.addEventListener("click", function () {
+            bird.speed = -0.2;
+        })
+    }
+
+    // 实行显示出来
+    function action() {
+        // 调用显示的方法
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 遍历角色数组
+        ctx.beginPath();
+        rolseArr.forEach(function (role) {
+            role.draw();
+        })
+        // 记录当前时间
+        var currentTime = new Date();
+        var totalTime = Math.floor((currentTime - startTime) / 1000);
+        // 时 分 秒
+        var h = Math.floor(totalTime / 3600);
+        var m = Math.floor(totalTime / 60) % 60;
+        var s = totalTime % 60;
+        // 将时间拼接成字符串
+        var text = "您坚持了" + h + "时" + m + "分" + s + "秒";
+
+        // 画布上画文字
+        ctx.save();
+        var textInfo = ctx.measureText(text);
+        var textWidth = textInfo.width;
+        // console.log(textWidth);
+        ctx.font = "20px 微软雅黑";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = "black";
+        // 画文字
+        ctx.fillText(text, canvas.width - textWidth - 80, 10);
+        ctx.restore();
+        ctx.fillText("®黄偉東*出品", canvas.width - 80, canvas.height - 10);
+        ctx.restore();
+
+
+
+
+        // 判断小鸟是否撞死在地上
+        var bird = rolseArr[rolseArr.length - 1];
+        if (bird.y >= canvas.height - imageObj["land"].height + 4) {
+            ctx.font = "50px 微软雅黑";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "red";
+            ctx.fillText("您太弱了！", canvas.width / 2 - 20, canvas.height / 2 - 20);
+            return;
+        }
+        // 判断小鸟是否撞死在柱子上
+        if (ctx.isPointInPath(bird.x + imageObj["birds"].width / 3 / 2 + 10, bird.y + imageObj["birds"].height / 2 -
+                imageObj["birds"].height)) {
+            ctx.font = "50px 微软雅黑";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "red";
+            ctx.fillText("您太弱了！", canvas.width / 2 - 20, canvas.height / 2 - 20);
+            return;
+        }
+
+        // console.log(1);
+        window.requestAnimationFrame(action);
+
+    }
+</script>
